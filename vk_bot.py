@@ -3,18 +3,25 @@ from vkbottle import Keyboard, KeyboardButtonColor, Text
 import logging
 import os
 
-# Читаем токен из файла token.txt (должен лежать в той же папке)
-try:
-    with open('token.txt', 'r', encoding='utf-8') as f:
-        TOKEN = f.read().strip()  # .strip() убирает лишние пробелы и переносы строк
-    print("✅ Токен успешно загружен из файла")
-except FileNotFoundError:
-    print("❌ Ошибка: файл token.txt не найден!")
-    print("Создай файл token.txt и запиши в него токен ВК")
-    exit(1)
-except Exception as e:
-    print(f"❌ Ошибка при чтении токена: {e}")
-    exit(1)
+# Сначала пробуем получить токен из переменной окружения (для Render)
+TOKEN = os.environ.get("VK_TOKEN")
+
+# Если переменная не найдена, пробуем прочитать из файла (для локальной работы)
+if not TOKEN:
+    try:
+        with open('token.txt', 'r', encoding='utf-8') as f:
+            TOKEN = f.read().strip()
+        print("✅ Токен успешно загружен из файла token.txt")
+    except FileNotFoundError:
+        print("❌ Ошибка: токен не найден!")
+        print("На Render добавь VK_TOKEN в Environment Variables")
+        print("Локально создай файл token.txt с токеном")
+        exit(1)
+    except Exception as e:
+        print(f"❌ Ошибка при чтении токена: {e}")
+        exit(1)
+else:
+    print("✅ Токен загружен из переменной окружения VK_TOKEN")
 
 bot = Bot(TOKEN)
 
@@ -127,3 +134,4 @@ async def reset_handler(message: Message):
 if __name__ == "__main__":
     print("🤖 Бот ВК запущен...")
     bot.run_forever()
+
