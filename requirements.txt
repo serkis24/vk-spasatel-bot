@@ -1,0 +1,7 @@
+vkbottle==4.3.12
+aiofiles
+aiohttp
+colorama
+pydantic
+typing-extensions
+vbml
