@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Конструктор квестов для ВК</title>
+    <meta charset="utf-8">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: #4CAF50; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .header p { color: #e8f5e9; }
+        .editor-panel { display: flex; gap: 20px; }
+        .states-panel { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .preview-panel { flex: 1; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .state-card { background: #f8f9fa; padding: 15px; margin-bottom: 15px; border-radius: 8px; border-left: 4px solid #4CAF50; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin: 5px; }
+        .btn-primary { background: #4CAF50; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn-add { background: #2196F3; color: white; margin: 10px 0; }
+        .btn-success { background: #28a745; color: white; }
+        input, textarea, select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        textarea { resize: vertical; min-height: 80px; }
+        .preview-message { background: #e3f2fd; padding: 15px; border-radius: 10px; margin-top: 20px; white-space: pre-wrap; }
+        .preview-button { display: inline-block; padding: 10px 20px; margin: 5px; border-radius: 20px; color: white; cursor: default; font-size: 14px; }
+        .button-green { background: #28a745; }
+        .button-red { background: #dc3545; }
+        .button-blue { background: #007bff; }
+        .tab { overflow: hidden; border: 1px solid #ccc; background-color: #f1f1f1; border-radius: 5px 5px 0 0; }
+        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 16px; }
+        .tab button:hover { background-color: #ddd; }
+        .tab button.active { background-color: #ccc; }
+        .tabcontent { display: none; padding: 20px; border: 1px solid #ccc; border-top: none; border-radius: 0 0 5px 5px; background: white; }
+        .tabcontent.active { display: block; }
+        .load-section { background: #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .flex-row { display: flex; gap: 10px; align-items: center; }
+        .flex-row input { flex: 1; }
+        .info-box { background: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 4px; margin: 10px 0; border: 1px solid #bee5eb; }
+        .small-note { font-size: 12px; color: #666; margin-top: 5px; }
+        .photo-preview { max-width: 200px; max-height: 200px; margin-top: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 Конструктор квестов для ВК</h1>
+            <p>Создавай свои текстовые игры с выбором! Фото добавляются через ID из ВК</p>
+        </div>
+
+        <div class="tab">
+            <button class="tablinks active" onclick="openTab(event, 'Editor')">Редактор</button>
+            <button class="tablinks" onclick="openTab(event, 'Share')">Поделиться</button>
+        </div>
+
+        <div id="Editor" class="tabcontent active">
+            <div class="editor-panel">
+                <!-- Левая панель: редактор состояний -->
+                <div class="states-panel">
+                    <h2>📝 Сцены квеста</h2>
+                    <input type="text" id="scenarioName" placeholder="Название сценария" value="Мой первый квест">
+                    
+                    <div class="info-box">
+                        📸 <strong>Как добавить фото:</strong><br>
+                        1. Загрузи фото в альбом группы ВК<br>
+                        2. Скопируй ID (например, photo-236136653_457239018)<br>
+                        3. Вставь ID в поле "ID фото"
+                    </div>
+                    
+                    <div id="statesContainer">
+                        <!-- Сюда будут добавляться карточки состояний -->
+                    </div>
+                    
+                    <button class="btn btn-add" onclick="addState()">➕ Добавить сцену</button>
+                    <br><br>
+                    <button class="btn btn-primary" onclick="saveScenario()">💾 Сохранить сценарий</button>
+                    <button class="btn" onclick="exportJSON()">📤 Экспорт JSON</button>
+                    <button class="btn btn-success" onclick="loadScenarioFromInput()">📂 Загрузить по ID</button>
+                    <input type="number" id="loadId" value="1" min="1" style="width: 80px; display: inline-block;">
+                </div>
+                
+                <!-- Правая панель: предпросмотр -->
+                <div class="preview-panel">
+                    <h2>👁️ Предпросмотр</h2>
+                    <div id="previewArea">
+                        <div class="preview-message" id="previewText">
+                            Здесь будет текст сцены
+                        </div>
+                        <div id="previewButtons"></div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>📸 Фото сцены</h3>
+                        <div id="previewPhotoContainer" style="text-align: center;">
+                            <span style="color: #999;">Нет фото</span>
+                        </div>
+                        <div id="previewPhotoId" class="small-note" style="margin-top: 10px; word-break: break-all;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="Share" class="tabcontent">
+            <div class="load-section">
+                <h2>📂 Загрузить существующий сценарий</h2>
+                <div class="flex-row">
+                    <input type="number" id="shareLoadId" placeholder="Введи ID сценария" value="1" min="1">
+                    <button class="btn btn-primary" onclick="loadScenarioFromShare()">Загрузить</button>
+                </div>
+            </div>
+            
+            <h2>🔗 Поделиться текущим сценарием</h2>
+            <p>ID сценария: <strong><span id="scenarioId">-</span></strong></p>
+            <p>Ссылка для загрузки: <span id="shareLink">-</span></p>
+            <button class="btn" onclick="copyLink()">Копировать ссылку</button>
+        </div>
+    </div>
+
+    <script>
+        let states = [];
+        let currentState = 0;
+        let scenarioId = null;
+
+        // Шаблон состояния по умолчанию
+        function createDefaultState(name = 'Новая сцена') {
+            return {
+                id: Date.now() + Math.random(),
+                name: name,
+                text: 'Текст сцены...',
+                image: '',
+                buttons: []
+            };
+        }
+
+        // Добавить новое состояние
+        function addState() {
+            states.push(createDefaultState(`Сцена ${states.length + 1}`));
+            renderStates();
+        }
+
+        // Удалить состояние
+        function deleteState(id) {
+            states = states.filter(s => s.id !== id);
+            if (states.length === 0) {
+                addState();
+            }
+            renderStates();
+        }
+
+        // Добавить кнопку к состоянию
+        function addButton(stateId) {
+            const state = states.find(s => s.id === stateId);
+            if (state) {
+                state.buttons.push({
+                    text: 'Новая кнопка',
+                    next: '',
+                    color: 'blue'
+                });
+                renderStates();
+            }
+        }
+
+        // Удалить кнопку
+        function deleteButton(stateId, btnIndex) {
+            const state = states.find(s => s.id === stateId);
+            if (state) {
+                state.buttons.splice(btnIndex, 1);
+                renderStates();
+            }
+        }
+
+        // Обновить поле состояния
+        function updateStateField(stateId, field, value) {
+            const state = states.find(s => s.id === stateId);
+            if (state) {
+                state[field] = value;
+                if (field === 'image' || field === 'text') {
+                    updatePreview(state);
+                }
+            }
+        }
+
+        // Обновить кнопку
+        function updateButton(stateId, btnIndex, field, value) {
+            const state = states.find(s => s.id === stateId);
+            if (state && state.buttons[btnIndex]) {
+                state.buttons[btnIndex][field] = value;
+            }
+        }
+
+        // Обновить предпросмотр
+        function updatePreview(state) {
+            document.getElementById('previewText').innerText = state.text;
+            
+            const btnContainer = document.getElementById('previewButtons');
+            btnContainer.innerHTML = '';
+            state.buttons.forEach(btn => {
+                const button = document.createElement('span');
+                button.className = `preview-button button-${btn.color}`;
+                button.innerText = btn.text;
+                btnContainer.appendChild(button);
+            });
+            
+            const photoContainer = document.getElementById('previewPhotoContainer');
+            const photoIdDiv = document.getElementById('previewPhotoId');
+            
+            if (state.image && state.image.startsWith('photo')) {
+                photoIdDiv.innerText = `ID: ${state.image}`;
+                photoContainer.innerHTML = `<span style="color: #666;">Фото из ВК: ${state.image}</span>`;
+            } else if (state.image) {
+                photoIdDiv.innerText = `ID: ${state.image}`;
+                photoContainer.innerHTML = `<span style="color: #999;">Неверный формат ID. Должно начинаться с 'photo'</span>`;
+            } else {
+                photoIdDiv.innerText = '';
+                photoContainer.innerHTML = '<span style="color: #999;">Нет фото</span>';
+            }
+        }
+
+        // Выбрать состояние для предпросмотра
+        function selectState(id) {
+            const state = states.find(s => s.id === id);
+            if (state) {
+                updatePreview(state);
+            }
+        }
+
+        // Рендер всех состояний
+        function renderStates() {
+            const container = document.getElementById('statesContainer');
+            container.innerHTML = '';
+            
+            states.forEach((state, index) => {
+                const card = document.createElement('div');
+                card.className = 'state-card';
+                
+                const buttonsHtml = state.buttons.map((btn, btnIndex) => `
+                    <div style="border: 1px solid #ddd; padding: 10px; margin: 5px 0; border-radius: 4px; background: white;">
+                        <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                            <input type="text" placeholder="Текст кнопки" value="${btn.text.replace(/"/g, '&quot;')}"
+                                   style="flex: 2;" onchange="updateButton(${state.id}, ${btnIndex}, 'text', this.value)">
+                            <select style="flex: 1;" onchange="updateButton(${state.id}, ${btnIndex}, 'color', this.value)">
+                                <option value="green" ${btn.color === 'green' ? 'selected' : ''}>Зеленая</option>
+                                <option value="red" ${btn.color === 'red' ? 'selected' : ''}>Красная</option>
+                                <option value="blue" ${btn.color === 'blue' ? 'selected' : ''}>Синяя</option>
+                            </select>
+                            <input type="text" placeholder="ID след. сцены" value="${btn.next || ''}"
+                                   style="flex: 2;" onchange="updateButton(${state.id}, ${btnIndex}, 'next', this.value)">
+                            <button onclick="deleteButton(${state.id}, ${btnIndex})" style="color: red; padding: 8px 12px;">✖</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">${state.name}</h3>
+                        <div>
+                            <button class="btn" onclick="selectState(${state.id})" style="padding: 5px 10px;">👁️</button>
+                            <button class="btn" onclick="deleteState(${state.id})" style="padding: 5px 10px; color: red;">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <label>Название сцены:</label>
+                    <input type="text" value="${state.name.replace(/"/g, '&quot;')}" 
+                           onchange="updateStateField(${state.id}, 'name', this.value)">
+                    
+                    <label>Текст сцены:</label>
+                    <textarea rows="3" 
+                              onchange="updateStateField(${state.id}, 'text', this.value)">${state.text.replace(/</g, '&lt;')}</textarea>
+                    
+                    <label>ID фото из ВК:</label>
+                    <input type="text" value="${state.image || ''}" 
+                           onchange="updateStateField(${state.id}, 'image', this.value)" 
+                           placeholder="photo-236136653_457239018">
+                    <div class="small-note">Пример: photo-236136653_457239018</div>
+                    
+                    <h4 style="margin: 15px 0 10px;">🔘 Кнопки:</h4>
+                    <div id="buttons-${state.id}">
+                        ${buttonsHtml || '<p style="color: #999; text-align: center; padding: 10px;">Нет кнопок. Добавьте первую!</p>'}
+                    </div>
+                    
+                    <button class="btn btn-add" onclick="addButton(${state.id})" style="width: 100%;">➕ Добавить кнопку</button>
+                `;
+                container.appendChild(card);
+            });
+            
+            if (states.length > 0) {
+                selectState(states[0].id);
+            }
+        }
+
+        // Сохранить сценарий
+        async function saveScenario() {
+            const scenarioData = {
+                name: document.getElementById('scenarioName').value,
+                states: states
+            };
+            
+            try {
+                const response = await fetch('/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: scenarioData.name,
+                        scenario: states
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.error) {
+                    alert('❌ ' + data.error);
+                    return;
+                }
+                
+                scenarioId = data.id;
+                document.getElementById('scenarioId').innerText = scenarioId;
+                document.getElementById('shareLink').innerText = 
+                    window.location.origin + '/load/' + scenarioId;
+                
+                alert('✅ Сценарий сохранен! ID: ' + scenarioId);
+            } catch (error) {
+                alert('❌ Ошибка сохранения: ' + error.message);
+            }
+        }
+
+        // Загрузить сценарий по ID
+        async function loadScenarioById(id) {
+            const loadId = id || document.getElementById('loadId').value;
+            try {
+                const response = await fetch(`/load/${loadId}`);
+                if (!response.ok) {
+                    throw new Error('Сценарий не найден');
+                }
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('❌ Сценарий не найден!');
+                    return;
+                }
+                
+                document.getElementById('scenarioName').value = data.name || 'Сценарий ' + loadId;
+                
+                states = (data.data || []).map(s => ({
+                    ...s,
+                    id: Date.now() + Math.random() + Math.random()
+                }));
+                
+                renderStates();
+                scenarioId = loadId;
+                document.getElementById('scenarioId').innerText = scenarioId;
+                document.getElementById('shareLink').innerText = 
+                    window.location.origin + '/load/' + scenarioId;
+                
+                alert(`✅ Сценарий ${loadId} загружен!`);
+            } catch (error) {
+                alert('❌ Ошибка загрузки: ' + error.message);
+            }
+        }
+
+        function loadScenarioFromInput() {
+            const id = document.getElementById('loadId').value;
+            loadScenarioById(id);
+        }
+
+        function loadScenarioFromShare() {
+            const id = document.getElementById('shareLoadId').value;
+            loadScenarioById(id);
+        }
+
+        function exportJSON() {
+            const data = {
+                name: document.getElementById('scenarioName').value,
+                states: states
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `scenario_${scenarioId || 'new'}.json`;
+            a.click();
+        }
+
+        function copyLink() {
+            const link = document.getElementById('shareLink').innerText;
+            navigator.clipboard.writeText(link);
+            alert('🔗 Ссылка скопирована!');
+        }
+
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tabcontent");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        window.onload = function() {
+            addState();
+            const urlParams = new URLSearchParams(window.location.search);
+            const loadId = urlParams.get('load');
+            if (loadId) {
+                document.getElementById('loadId').value = loadId;
+                loadScenarioById(loadId);
+            }
+        };
+    </script>
+</body>
+</html>
