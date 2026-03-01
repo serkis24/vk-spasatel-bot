@@ -1,4 +1,0 @@
-flask
-flask-localtunnel
-vkbottle==4.3.12
-python-dotenv
